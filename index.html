@@ -744,12 +744,21 @@
       <button type="button" class="btn btn-sm btn-secondary" onclick="closeLibraryModal()">✕</button>
     </div>
     <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
-      Tus plantillas de unidades guardadas permanentemente. Puedes importarlas a cualquier partida.
+      Tus plantillas de unidades guardadas permanentemente. Puedes importarlas a cualquier partida, o exportarlas para compartirlas con un amigo.
+    </div>
+    <div id="library-toolbar" style="display:flex; gap:6px; margin-bottom:10px;">
+      <button type="button" class="btn btn-secondary btn-sm" style="flex:1;" onclick="toggleLibraryExportMode()">☑️ Exportar</button>
+      <button type="button" class="btn btn-secondary btn-sm" style="flex:1;" onclick="triggerLibraryImportInput()">📥 Importar</button>
+      <input type="file" id="library-import-input" accept="application/json,.json" style="display:none" onchange="handleLibraryImportFile(event)">
     </div>
     <div id="library-units-container" style="display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow-y:auto;">
       <!-- Se carga dinámicamente -->
     </div>
-    <div style="margin-top:15px;">
+    <div id="library-export-actions" class="hidden" style="display:flex; gap:6px; margin-top:15px;">
+      <button type="button" class="btn btn-secondary btn-block" onclick="cancelLibraryExportMode()">Cancelar</button>
+      <button type="button" id="library-export-confirm-btn" class="btn btn-block" onclick="confirmExportSelected()">Exportar Seleccionadas (0)</button>
+    </div>
+    <div id="library-close-actions" style="margin-top:15px;">
       <button type="button" class="btn btn-secondary btn-block" onclick="closeLibraryModal()">Cerrar</button>
     </div>
   </div>
@@ -1098,12 +1107,151 @@
   }
 
   function openLibraryModal() {
+    libraryExportMode = false;
+    librarySelectedIds.clear();
     renderLibraryUnits();
     document.getElementById('library-modal').classList.remove('hidden');
   }
 
   function closeLibraryModal() {
     document.getElementById('library-modal').classList.add('hidden');
+  }
+
+  // --- EXPORTAR / IMPORTAR BIBLIOTECA ---
+  let libraryExportMode = false;
+  let librarySelectedIds = new Set();
+
+  function toggleLibraryExportMode() {
+    libraryExportMode = !libraryExportMode;
+    librarySelectedIds.clear();
+    document.getElementById('library-export-actions').classList.toggle('hidden', !libraryExportMode);
+    document.getElementById('library-close-actions').classList.toggle('hidden', libraryExportMode);
+    document.getElementById('library-toolbar').classList.toggle('hidden', libraryExportMode);
+    renderLibraryUnits();
+  }
+
+  function cancelLibraryExportMode() {
+    libraryExportMode = false;
+    librarySelectedIds.clear();
+    document.getElementById('library-export-actions').classList.add('hidden');
+    document.getElementById('library-close-actions').classList.remove('hidden');
+    document.getElementById('library-toolbar').classList.remove('hidden');
+    renderLibraryUnits();
+  }
+
+  function toggleLibrarySelect(libraryUnitId) {
+    if (librarySelectedIds.has(libraryUnitId)) {
+      librarySelectedIds.delete(libraryUnitId);
+    } else {
+      librarySelectedIds.add(libraryUnitId);
+    }
+    const btn = document.getElementById('library-export-confirm-btn');
+    btn.innerText = `Exportar Seleccionadas (${librarySelectedIds.size})`;
+    btn.disabled = librarySelectedIds.size === 0;
+  }
+
+  function confirmExportSelected() {
+    if (librarySelectedIds.size === 0) return;
+    let library = JSON.parse(localStorage.getItem('wh_unit_library')) || [];
+    const selectedUnits = library.filter(u => librarySelectedIds.has(u.id));
+    if (selectedUnits.length === 0) return;
+
+    const exportPayload = {
+      app: 'AoS Tracker',
+      type: 'unit-library-export',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      units: selectedUnits
+    };
+
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `aos-tracker-unidades-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    addLog(`📤 Exportadas ${selectedUnits.length} unidad(es) de la biblioteca a un archivo.`);
+    cancelLibraryExportMode();
+  }
+
+  function triggerLibraryImportInput() {
+    document.getElementById('library-import-input').click();
+  }
+
+  function handleLibraryImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let parsed;
+      try {
+        parsed = JSON.parse(e.target.result);
+      } catch (err) {
+        showCustomConfirm({
+          title: '⚠️ Archivo no válido',
+          msg: 'El archivo seleccionado no es un JSON válido de la biblioteca de unidades.',
+          requireTextInput: false,
+          confirmBtnClass: 'btn-danger',
+          onConfirm: () => {}
+        });
+        event.target.value = '';
+        return;
+      }
+
+      const incomingUnits = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.units) ? parsed.units : null);
+      if (!incomingUnits || incomingUnits.length === 0) {
+        showCustomConfirm({
+          title: '⚠️ Archivo no válido',
+          msg: 'El archivo no contiene unidades reconocibles.',
+          requireTextInput: false,
+          confirmBtnClass: 'btn-danger',
+          onConfirm: () => {}
+        });
+        event.target.value = '';
+        return;
+      }
+
+      let library = JSON.parse(localStorage.getItem('wh_unit_library')) || [];
+      const existingNames = new Set(library.map(u => u.name));
+      let addedCount = 0;
+      let renamedCount = 0;
+
+      incomingUnits.forEach(u => {
+        const cleanUnit = JSON.parse(JSON.stringify(u));
+        cleanUnit.id = 'lib_' + Date.now() + Math.random().toString(36).substr(2, 4);
+        if (existingNames.has(cleanUnit.name)) {
+          cleanUnit.name = `${cleanUnit.name} (importada)`;
+          renamedCount++;
+        }
+        existingNames.add(cleanUnit.name);
+        library.push(cleanUnit);
+        addedCount++;
+      });
+
+      localStorage.setItem('wh_unit_library', JSON.stringify(library));
+      renderLibraryUnits();
+      event.target.value = '';
+
+      let msg = `Se importaron ${addedCount} unidad(es) a tu biblioteca.`;
+      if (renamedCount > 0) {
+        msg += ` ${renamedCount} tenían el mismo nombre que unidades existentes y se renombraron con "(importada)" para no sobrescribir nada.`;
+      }
+      addLog(`📥 Importadas ${addedCount} unidad(es) a la biblioteca desde un archivo.`);
+      showCustomConfirm({
+        title: '📥 Importación completada',
+        msg,
+        requireTextInput: false,
+        confirmBtnClass: 'btn',
+        onConfirm: () => {}
+      });
+    };
+    reader.readAsText(file);
   }
 
   function renderLibraryUnits() {
@@ -1120,6 +1268,16 @@
         ? `<img src="${u.img}" alt="${u.name}">`
         : (u.img || '⚔️');
 
+      const isChecked = librarySelectedIds.has(u.id);
+      const actionsHtml = libraryExportMode
+        ? `<label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:4px;">
+             <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleLibrarySelect('${u.id}')" style="width:20px; height:20px; accent-color: var(--gold-primary); cursor:pointer;">
+           </label>`
+        : `<div style="display:flex; gap:4px; flex-shrink:0;">
+             <button type="button" class="btn btn-sm" onclick="importUnitFromLibrary('${u.id}')" title="Cargar en partida">📥 Cargar</button>
+             <button type="button" class="btn btn-danger btn-sm" onclick="promptDeleteFromLibrary('${u.id}')" title="Eliminar de la biblioteca">🗑️</button>
+           </div>`;
+
       return `
         <div class="library-item-chip">
           <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
@@ -1131,10 +1289,7 @@
               <div style="font-size:0.7rem; color:var(--text-muted);">${u.models} Minis (${u.woundsPerModel}W) | Sv: ${u.save === 7 ? 'Sin' : u.save + '+'}</div>
             </div>
           </div>
-          <div style="display:flex; gap:4px; flex-shrink:0;">
-            <button type="button" class="btn btn-sm" onclick="importUnitFromLibrary('${u.id}')" title="Cargar en partida">📥 Cargar</button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="promptDeleteFromLibrary('${u.id}')" title="Eliminar de la biblioteca">🗑️</button>
-          </div>
+          ${actionsHtml}
         </div>
       `;
     }).join('');
