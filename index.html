@@ -288,6 +288,19 @@
     }
     .fab-btn:hover { transform: scale(1.06) rotate(90deg); }
 
+    /* Pestaña lateral fija tipo "marcapáginas" para consultar reglas de ejército */
+    .side-tab-btn {
+      position: fixed; top: 42%; right: 0; width: 42px; height: 68px;
+      background: linear-gradient(160deg, var(--gold-hover), var(--gold-primary) 55%, var(--gold-dark));
+      color: #1a1206; border-radius: 12px 0 0 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; cursor: pointer; z-index: 940;
+      border: 2px solid var(--gold-dark); border-right: none;
+      box-shadow: -4px 4px 14px rgba(20,14,6,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
+      transition: width 0.18s ease, transform 0.18s ease;
+    }
+    .side-tab-btn:hover { width: 50px; transform: translateX(-2px); }
+    .side-tab-btn:active { filter: brightness(0.95); }
+
     /* Units Grid & Cards */
     .unit-grid { display: flex; flex-direction: column; gap: 12px; }
     .unit-card {
@@ -314,7 +327,7 @@
     .unit-header-top { display: flex; align-items: center; gap: 9px; }
 
     .unit-img {
-      width: 52px; height: 52px; border-radius: 9px;
+      width: 76px; height: 76px; border-radius: 11px;
       border: 2px solid var(--gold-dark);
       outline: 1px solid rgba(161,120,15,0.4); outline-offset: 2px;
       flex-shrink: 0;
@@ -322,9 +335,9 @@
       position: relative;
     }
     .unit-img-inner {
-      width: 100%; height: 100%; border-radius: 6px; overflow: hidden;
+      width: 100%; height: 100%; border-radius: 8px; overflow: hidden;
       background: radial-gradient(circle at 35% 30%, var(--iron-mid), var(--iron-dark));
-      display: flex; align-items: center; justify-content: center; font-size: 1.7rem;
+      display: flex; align-items: center; justify-content: center; font-size: 2.3rem;
       box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
     }
     .unit-img-inner img { width: 100%; height: 100%; object-fit: cover; }
@@ -337,15 +350,15 @@
 
     /* Icono de rasgo en cada esquina del marco — por ENCIMA del marco, sin recortarse */
     .trait-corner-icon {
-      position: absolute; width: 17px; height: 17px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; font-size: 0.62rem;
+      position: absolute; width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 0.72rem;
       background: var(--iron-dark); border: 1.5px solid var(--parchment-card);
       box-shadow: 0 1px 4px rgba(0,0,0,0.6); z-index: 3;
     }
-    .trait-corner-unique { top: -6px; right: -6px; border-color: #c99a2e; }
-    .trait-corner-hero { top: -6px; left: -6px; border-color: #b3701f; }
-    .trait-corner-wizard { bottom: -6px; left: -6px; border-color: #8a4fd6; }
-    .trait-corner-priest { bottom: -6px; right: -6px; border-color: #1a9c85; }
+    .trait-corner-unique { top: -7px; right: -7px; border-color: #c99a2e; }
+    .trait-corner-hero { top: -7px; left: -7px; border-color: #b3701f; }
+    .trait-corner-wizard { bottom: -7px; left: -7px; border-color: #8a4fd6; }
+    .trait-corner-priest { bottom: -7px; right: -7px; border-color: #1a9c85; }
 
     .unit-title-area { flex: 1; min-width: 0; }
     .unit-name {
@@ -373,6 +386,15 @@
     .library-item-chip .trait-unique { color: var(--gold-bright); border-color: var(--gold-primary); }
     .library-item-chip .trait-wizard { color: #c39bf5; border-color: #8a4fd6; }
     .library-item-chip .trait-priest { color: #6fe0c8; border-color: #1a9c85; }
+
+    /* Insignia de fase del turno (colores de referencia del cuadro Turn Phases) */
+    .phase-badge {
+      display: inline-flex; align-items: center;
+      font-family: var(--font-display); font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.3px; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 5px; line-height: 1.4;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
 
     /* --- Arrastrar para reordenar --- */
     .drag-handle {
@@ -595,6 +617,7 @@
         </div>
       </div>
       <div class="header-actions">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="openArmyRulesModal()" title="Formaciones, rasgos heroicos y artefactos">📜 Reglas</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="toggleExpandAllUnits()" title="Expandir o colapsar todas las fichas">🔽 Detalles</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="promptNextTurn()" title="Restablecer ataques de todas las unidades">🔔 Pasar Turno</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="promptResetAllHP()" title="Restaurar toda la vida">🔄 Curar Todo</button>
@@ -670,6 +693,9 @@
 
 <!-- FAB -->
 <div class="fab-btn" onclick="openAddUnitMenu()" title="Añadir unidad">+</div>
+
+<!-- Pestaña lateral fija: acceso directo a "Consultar" reglas de ejército -->
+<div class="side-tab-btn" onclick="openQuickRulesConsult()" title="Consultar reglas de ejército">📖</div>
 
 <!-- ADD UNIT CHOICE MODAL -->
 <div id="add-unit-menu-modal" class="modal-overlay hidden">
@@ -999,6 +1025,32 @@
   </div>
 </div>
 
+<!-- ARMY RULES MODAL: Formaciones, Rasgos de Batalla, Rasgos Heroicos, Artefactos -->
+<div id="army-rules-modal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width:550px;">
+    <div class="modal-header">
+      <h2>📜 Reglas de Ejército</h2>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="closeArmyRulesModal()">✕</button>
+    </div>
+
+    <div class="mode-tabs" style="margin-bottom:14px;">
+      <div id="rules-tab-configure-btn" class="tab-btn active-attack" onclick="switchRulesTab('configure')">⚙️ Configurar</div>
+      <div id="rules-tab-consult-btn" class="tab-btn" onclick="switchRulesTab('consult')">📖 Consultar</div>
+    </div>
+
+    <div id="rules-tab-configure">
+      <!-- Se carga dinámicamente -->
+    </div>
+    <div id="rules-tab-consult" class="hidden">
+      <!-- Se carga dinámicamente -->
+    </div>
+
+    <div style="margin-top:15px;">
+      <button type="button" class="btn btn-secondary btn-block" onclick="closeArmyRulesModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- GENERIC CONFIRMATION / PROMPT MODAL STYLED -->
 <div id="confirm-modal" class="modal-overlay hidden">
   <div class="modal-card" style="max-width:400px;">
@@ -1049,6 +1101,384 @@
       appState.units.forEach(u => expandedUnitIds.add(u.id));
     }
     renderUnits();
+  }
+
+  // ==================== REGLAS DE EJÉRCITO ====================
+  // Biblioteca persistente de Formaciones / Rasgos de Batalla / Rasgos Heroicos / Artefactos,
+  // organizada por facción. La SELECCIÓN de esta partida (formación + asignaciones a héroes)
+  // vive en appState.armyConfig y en cada unidad (heroicTraitId / artifactId).
+
+  const RULE_TYPE_LABELS = {
+    formation: { singular: 'Formación', plural: 'Formaciones', icon: '🛡️' },
+    battleTrait: { singular: 'Rasgo de Batalla', plural: 'Rasgos de Batalla', icon: '⚔️' },
+    heroicTrait: { singular: 'Rasgo Heroico', plural: 'Rasgos Heroicos', icon: '🎖️' },
+    artifact: { singular: 'Artefacto de Poder', plural: 'Artefactos de Poder', icon: '💎' }
+  };
+
+  // Fases del turno: color de referencia tomado del cuadro "Turn Phases", traducido al español.
+  const PHASE_INFO = {
+    inicio:      { label: 'Inicio del Turno',     color: '#1c1c1c', text: '#f2ede0' },
+    heroes:      { label: 'Fase de Héroes',        color: '#a68f3e', text: '#241c06' },
+    movimiento:  { label: 'Fase de Movimiento',    color: '#8b8682', text: '#201d1a' },
+    disparo:     { label: 'Fase de Disparo',       color: '#2b6b7a', text: '#eef7f9' },
+    carga:       { label: 'Fase de Carga',         color: '#c17d3f', text: '#241505' },
+    combate:     { label: 'Fase de Combate',       color: '#8a2f30', text: '#f7e9e9' },
+    fin:         { label: 'Fin del Turno',         color: '#7a5a91', text: '#f5eefa' },
+    pasiva:      { label: 'Pasiva / Cualquier Fase', color: '#a1780f', text: '#221a05' }
+  };
+  const PHASE_ORDER = ['pasiva', 'inicio', 'heroes', 'movimiento', 'disparo', 'carga', 'combate', 'fin'];
+
+  function buildPhaseBadge(phaseKey) {
+    const p = PHASE_INFO[phaseKey] || PHASE_INFO.pasiva;
+    return `<span class="phase-badge" style="background:${p.color}; color:${p.text};">${p.label}</span>`;
+  }
+
+  function buildPhaseSelectOptions(selected) {
+    return PHASE_ORDER.map(key => `<option value="${key}" ${selected === key ? 'selected' : ''}>${PHASE_INFO[key].label}</option>`).join('');
+  }
+
+  function getRulesLibrary() {
+    try {
+      return JSON.parse(localStorage.getItem('wh_rules_library')) || [];
+    } catch(e) { return []; }
+  }
+
+  function saveRulesLibrary(arr) {
+    localStorage.setItem('wh_rules_library', JSON.stringify(arr));
+  }
+
+  function getRulesByType(type, faction) {
+    return getRulesLibrary().filter(r => r.type === type && r.faction === faction);
+  }
+
+  function openArmyRulesModal() {
+    document.getElementById('army-rules-modal').classList.remove('hidden');
+    switchRulesTab('configure');
+  }
+
+  function openQuickRulesConsult() {
+    document.getElementById('army-rules-modal').classList.remove('hidden');
+    switchRulesTab('consult');
+  }
+
+  function closeArmyRulesModal() {
+    document.getElementById('army-rules-modal').classList.add('hidden');
+  }
+
+  function switchRulesTab(tab) {
+    document.getElementById('rules-tab-configure').classList.toggle('hidden', tab !== 'configure');
+    document.getElementById('rules-tab-consult').classList.toggle('hidden', tab !== 'consult');
+    document.getElementById('rules-tab-configure-btn').classList.toggle('active-attack', tab === 'configure');
+    document.getElementById('rules-tab-consult-btn').classList.toggle('active-attack', tab === 'consult');
+    if (tab === 'configure') renderRulesConfigureTab();
+    else renderRulesConsultTab();
+  }
+
+  function selectArmyFaction(faction) {
+    appState.armyConfig.faction = faction;
+    saveToStorage();
+    renderRulesConfigureTab();
+  }
+
+  function promptChangeArmyFaction() {
+    showCustomConfirm({
+      title: '🔄 Cambiar de Facción',
+      msg: 'Cambiar de facción reiniciará la formación y las asignaciones de rasgos/artefactos de esta partida (tu biblioteca de reglas NO se borra). ¿Continuar?',
+      requireTextInput: false,
+      confirmBtnClass: 'btn-danger',
+      onConfirm: () => { resetArmyConfig(false); }
+    });
+  }
+
+  function promptResetArmyConfig() {
+    showCustomConfirm({
+      title: '🔄 Reiniciar Configuración',
+      msg: 'Se quitará la formación seleccionada y todos los rasgos heroicos/artefactos asignados a tus héroes en esta partida. Tu biblioteca de reglas (formaciones, rasgos, artefactos guardados) NO se borra. ¿Continuar?',
+      requireTextInput: false,
+      confirmBtnClass: 'btn-danger',
+      onConfirm: () => { resetArmyConfig(true); }
+    });
+  }
+
+  function resetArmyConfig(keepFaction) {
+    appState.armyConfig.formationId = null;
+    if (!keepFaction) appState.armyConfig.faction = null;
+    appState.units.forEach(u => { delete u.heroicTraitId; delete u.artifactId; });
+    saveToStorage();
+    renderRulesConfigureTab();
+    renderUnits();
+  }
+
+  function selectFormation(formationId) {
+    appState.armyConfig.formationId = (appState.armyConfig.formationId === formationId) ? null : formationId;
+    saveToStorage();
+    renderRulesConfigureTab();
+  }
+
+  function assignHeroRule(unitId, field, ruleId) {
+    const unit = appState.units.find(u => u.id === unitId);
+    if (!unit) return;
+    unit[field] = ruleId || null;
+    saveToStorage();
+    renderRulesConfigureTab();
+    renderUnits();
+  }
+
+  function addRuleEntry(type) {
+    const faction = appState.armyConfig.faction;
+    if (!faction) return;
+    const nameInput = document.getElementById(`new-rule-${type}-name`);
+    const descInput = document.getElementById(`new-rule-${type}-desc`);
+    const phaseInput = document.getElementById(`new-rule-${type}-phase`);
+    const name = nameInput.value.trim();
+    const description = descInput.value.trim();
+    const phase = phaseInput ? phaseInput.value : 'pasiva';
+    if (!name) return;
+
+    const library = getRulesLibrary();
+    library.push({ id: 'rule_' + Date.now() + Math.random().toString(36).substr(2,4), faction, type, name, description, phase });
+    saveRulesLibrary(library);
+    nameInput.value = '';
+    descInput.value = '';
+    renderRulesConfigureTab();
+  }
+
+  function promptDeleteRuleEntry(ruleId) {
+    showCustomConfirm({
+      title: '🗑️ Eliminar de la Biblioteca',
+      msg: '¿Seguro que quieres eliminar esta entrada de tu biblioteca de reglas? Si estaba asignada a algún héroe o seleccionada como formación en esta partida, se desasignará.',
+      requireTextInput: false,
+      confirmBtnClass: 'btn-danger',
+      onConfirm: () => {
+        const library = getRulesLibrary().filter(r => r.id !== ruleId);
+        saveRulesLibrary(library);
+        if (appState.armyConfig.formationId === ruleId) appState.armyConfig.formationId = null;
+        appState.units.forEach(u => {
+          if (u.heroicTraitId === ruleId) delete u.heroicTraitId;
+          if (u.artifactId === ruleId) delete u.artifactId;
+        });
+        saveToStorage();
+        renderRulesConfigureTab();
+        renderUnits();
+      }
+    });
+  }
+
+  function renderRulesConfigureTab() {
+    const container = document.getElementById('rules-tab-configure');
+    const cfg = appState.armyConfig;
+
+    if (!cfg.faction) {
+      container.innerHTML = `
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">
+          Elige la facción de tu ejército para esta partida. Verás y podrás asignar solo las formaciones, rasgos y artefactos de esa facción.
+        </p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          ${Object.keys(FACTION_INFO).map(f => `
+            <button type="button" class="btn btn-secondary" style="padding:16px 8px; flex-direction:column; gap:4px;" onclick="selectArmyFaction('${f}')">
+              <span style="font-size:1.6rem;">${FACTION_INFO[f].icon}</span>
+              <span>${f}</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      return;
+    }
+
+    const info = FACTION_INFO[cfg.faction];
+    const heroes = appState.units.filter(u => u.isHero && u.faction === cfg.faction);
+    const formations = getRulesByType('formation', cfg.faction);
+    const battleTraits = getRulesByType('battleTrait', cfg.faction);
+    const heroicTraits = getRulesByType('heroicTrait', cfg.faction);
+    const artifacts = getRulesByType('artifact', cfg.faction);
+
+    const usedHeroicIds = new Set(appState.units.filter(u => u.heroicTraitId).map(u => u.heroicTraitId));
+    const usedArtifactIds = new Set(appState.units.filter(u => u.artifactId).map(u => u.artifactId));
+
+    container.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:8px 10px; background:rgba(0,0,0,0.06); border-radius:8px;">
+        <span style="font-weight:bold; font-size:0.85rem;">${info.icon} Ejército: ${cfg.faction}</span>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="promptChangeArmyFaction()">Cambiar</button>
+      </div>
+
+      ${renderRuleSectionSelectable('formation', formations, cfg.formationId, (id) => `selectFormation('${id}')`)}
+      ${renderRuleSectionReadonly('battleTrait', battleTraits)}
+      ${renderHeroAssignmentSection('heroicTrait', heroicTraits, heroes, usedHeroicIds)}
+      ${renderHeroAssignmentSection('artifact', artifacts, heroes, usedArtifactIds)}
+
+      <button type="button" class="btn btn-danger btn-block" style="margin-top:6px;" onclick="promptResetArmyConfig()">🔄 Reiniciar Configuración (nueva partida)</button>
+    `;
+  }
+
+  function renderRuleAddForm(type) {
+    return `
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px; padding:10px; background:rgba(0,0,0,0.05); border:1px dashed var(--border-color); border-radius:8px;">
+        <input type="text" id="new-rule-${type}-name" placeholder="Nombre..." style="padding:8px; background:#faf3dd; border:1px solid var(--border-color); border-radius:6px; font-size:0.8rem;">
+        <label style="font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold;">¿En qué fase se usa?</label>
+        <select id="new-rule-${type}-phase" style="padding:8px; background:#faf3dd; border:1px solid var(--border-color); border-radius:6px; font-size:0.8rem;">
+          ${buildPhaseSelectOptions('pasiva')}
+        </select>
+        <textarea id="new-rule-${type}-desc" rows="2" placeholder="Descripción / efecto..." style="padding:8px; background:#faf3dd; border:1px solid var(--border-color); border-radius:6px; font-size:0.8rem; font-family:var(--font-body);"></textarea>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addRuleEntry('${type}')">+ Añadir a la biblioteca</button>
+      </div>
+    `;
+  }
+
+  function renderRuleSectionSelectable(type, entries, selectedId, onClickFn) {
+    const label = RULE_TYPE_LABELS[type];
+    return `
+      <div class="form-section-title">${label.icon} ${label.plural} <span style="font-size:0.65rem; color:var(--text-faint); text-transform:none;">(elige 1)</span></div>
+      ${entries.length === 0 ? `<p style="font-size:0.78rem; color:var(--text-muted);">Aún no has añadido ninguna.</p>` : ''}
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        ${entries.map(e => `
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" class="btn ${selectedId === e.id ? '' : 'btn-secondary'} btn-sm" style="flex:1; text-align:left; justify-content:flex-start;" onclick="${onClickFn(e.id)}">
+              ${selectedId === e.id ? '✅ ' : ''}${e.name}
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="promptDeleteRuleEntry('${e.id}')" title="Eliminar de la biblioteca">🗑️</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px; margin:-3px 0 3px 4px;">
+            ${buildPhaseBadge(e.phase)}
+            ${e.description ? `<div style="font-size:0.72rem; color:var(--text-muted);">${e.description}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      ${renderRuleAddForm(type)}
+    `;
+  }
+
+  function renderRuleSectionReadonly(type, entries) {
+    const label = RULE_TYPE_LABELS[type];
+    return `
+      <div class="form-section-title" style="margin-top:16px;">${label.icon} ${label.plural} <span style="font-size:0.65rem; color:var(--text-faint); text-transform:none;">(se aplican todos)</span></div>
+      ${entries.length === 0 ? `<p style="font-size:0.78rem; color:var(--text-muted);">Aún no has añadido ninguno.</p>` : ''}
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        ${entries.map(e => `
+          <div style="display:flex; align-items:center; gap:6px; background:rgba(0,0,0,0.04); border-radius:7px; padding:6px 8px;">
+            <div style="flex:1;">
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:2px;">
+                <span style="font-weight:bold; font-size:0.8rem;">${e.name}</span>
+                ${buildPhaseBadge(e.phase)}
+              </div>
+              ${e.description ? `<div style="font-size:0.72rem; color:var(--text-muted);">${e.description}</div>` : ''}
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" onclick="promptDeleteRuleEntry('${e.id}')" title="Eliminar de la biblioteca">🗑️</button>
+          </div>
+        `).join('')}
+      </div>
+      ${renderRuleAddForm(type)}
+    `;
+  }
+
+  function renderHeroAssignmentSection(type, entries, heroes, usedIds) {
+    const label = RULE_TYPE_LABELS[type];
+    const field = type === 'heroicTrait' ? 'heroicTraitId' : 'artifactId';
+    return `
+      <div class="form-section-title" style="margin-top:16px;">${label.icon} ${label.plural} <span style="font-size:0.65rem; color:var(--text-faint); text-transform:none;">(1 por héroe, sin repetir)</span></div>
+      ${heroes.length === 0 ? `<p style="font-size:0.78rem; color:var(--text-muted);">No tienes ninguna unidad "Héroe" de esta facción en tu lista actual.</p>` : ''}
+      ${heroes.map(hero => {
+        const current = hero[field];
+        const currentEntry = entries.find(e => e.id === current);
+        const availableOptions = entries.filter(e => e.id === current || !usedIds.has(e.id));
+        return `
+          <div style="margin-bottom:8px;">
+            <label style="font-size:0.75rem; font-weight:bold; display:block; margin-bottom:3px;">${hero.name}</label>
+            <select onchange="assignHeroRule('${hero.id}', '${field}', this.value)" style="width:100%; padding:8px; background:#faf3dd; border:1px solid var(--border-color); border-radius:6px; font-size:0.8rem;">
+              <option value="">— Ninguno —</option>
+              ${availableOptions.map(e => `<option value="${e.id}" ${current === e.id ? 'selected' : ''}>${e.name} — ${PHASE_INFO[e.phase] ? PHASE_INFO[e.phase].label : PHASE_INFO.pasiva.label}</option>`).join('')}
+            </select>
+            ${currentEntry ? `<div style="margin-top:4px;">${buildPhaseBadge(currentEntry.phase)}</div>` : ''}
+          </div>
+        `;
+      }).join('')}
+      ${entries.length === 0 ? `<p style="font-size:0.78rem; color:var(--text-muted);">Aún no has añadido ninguno a la biblioteca.</p>` : ''}
+      ${renderRuleAddForm(type)}
+    `;
+  }
+
+  function renderRulesConsultTab() {
+    const container = document.getElementById('rules-tab-consult');
+    const cfg = appState.armyConfig;
+
+    if (!cfg.faction) {
+      container.innerHTML = `<p style="font-size:0.82rem; color:var(--text-muted);">Todavía no has configurado ninguna facción para esta partida. Ve a la pestaña "⚙️ Configurar".</p>`;
+      return;
+    }
+
+    const info = FACTION_INFO[cfg.faction];
+    const formation = cfg.formationId ? getRulesLibrary().find(r => r.id === cfg.formationId) : null;
+    const battleTraits = getRulesByType('battleTrait', cfg.faction);
+    const heroes = appState.units.filter(u => u.isHero && u.faction === cfg.faction);
+    const library = getRulesLibrary();
+
+    container.innerHTML = `
+      <div style="font-weight:bold; font-size:0.9rem; margin-bottom:12px;">${info.icon} Ejército: ${cfg.faction}</div>
+
+      <div class="form-section-title">🛡️ Formación</div>
+      ${formation
+        ? `<div style="background:rgba(0,0,0,0.04); border-radius:7px; padding:8px; margin-bottom:10px;">
+             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:2px;">
+               <span style="font-weight:bold; font-size:0.82rem;">${formation.name}</span>
+               ${buildPhaseBadge(formation.phase)}
+             </div>
+             ${formation.description ? `<div style="font-size:0.74rem; color:var(--text-muted);">${formation.description}</div>` : ''}
+           </div>`
+        : `<p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:10px;">Sin formación seleccionada.</p>`
+      }
+
+      <div class="form-section-title">⚔️ Rasgos de Batalla</div>
+      ${battleTraits.length === 0
+        ? `<p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:10px;">No hay rasgos de batalla guardados para esta facción.</p>`
+        : battleTraits.map(t => `
+            <div style="background:rgba(0,0,0,0.04); border-radius:7px; padding:8px; margin-bottom:6px;">
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:2px;">
+                <span style="font-weight:bold; font-size:0.82rem;">${t.name}</span>
+                ${buildPhaseBadge(t.phase)}
+              </div>
+              ${t.description ? `<div style="font-size:0.74rem; color:var(--text-muted);">${t.description}</div>` : ''}
+            </div>
+          `).join('')
+      }
+
+      <div class="form-section-title" style="margin-top:12px;">🎖️ Héroes</div>
+      ${heroes.length === 0 ? `<p style="font-size:0.78rem; color:var(--text-muted);">No hay héroes de esta facción en tu lista actual.</p>` : ''}
+      ${heroes.map(hero => {
+        const trait = hero.heroicTraitId ? library.find(r => r.id === hero.heroicTraitId) : null;
+        const artifact = hero.artifactId ? library.find(r => r.id === hero.artifactId) : null;
+        return `
+          <div style="background:rgba(0,0,0,0.04); border-radius:8px; padding:9px; margin-bottom:8px;">
+            <div style="font-weight:bold; font-size:0.84rem; margin-bottom:4px;">${hero.name}</div>
+            <div style="font-size:0.76rem; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <strong style="color:var(--gold-primary);">🎖️ Rasgo:</strong> ${trait ? trait.name : 'Sin asignar'}
+              ${trait ? buildPhaseBadge(trait.phase) : ''}
+            </div>
+            ${trait && trait.description ? `<div style="font-size:0.72rem; color:var(--text-muted); margin:2px 0 4px 0;">${trait.description}</div>` : ''}
+            <div style="font-size:0.76rem; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <strong style="color:var(--gold-primary);">💎 Artefacto:</strong> ${artifact ? artifact.name : 'Sin asignar'}
+              ${artifact ? buildPhaseBadge(artifact.phase) : ''}
+            </div>
+            ${artifact && artifact.description ? `<div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${artifact.description}</div>` : ''}
+          </div>
+        `;
+      }).join('')}
+    `;
+  }
+
+  function buildAbilitiesText(u) {
+    let parts = [];
+    if (u.abilities && u.abilities.trim()) parts.push(u.abilities.trim());
+    if (u.isHero && (u.heroicTraitId || u.artifactId)) {
+      const library = getRulesLibrary();
+      if (u.heroicTraitId) {
+        const trait = library.find(r => r.id === u.heroicTraitId);
+        if (trait) parts.push(`🎖️ RASGO HEROICO ${buildPhaseBadge(trait.phase)} — ${trait.name}: ${trait.description || 'Sin descripción.'}`);
+      }
+      if (u.artifactId) {
+        const artifact = library.find(r => r.id === u.artifactId);
+        if (artifact) parts.push(`💎 ARTEFACTO ${buildPhaseBadge(artifact.phase)} — ${artifact.name}: ${artifact.description || 'Sin descripción.'}`);
+      }
+    }
+    return parts.length > 0 ? parts.join('\n\n') : 'Sin habilidades configuradas para esta unidad.';
   }
 
 
@@ -1151,7 +1581,8 @@
     activeUnitId: null,
     scores: { vp: 0, cp: 4, turn: 1 },
     logs: [],
-    units: defaultUnits
+    units: defaultUnits,
+    armyConfig: { faction: null, formationId: null }
   };
 
   function loadState() {
@@ -1179,6 +1610,7 @@
         if (parsed.scores) appState.scores = parsed.scores;
         if (appState.scores.turn === undefined) appState.scores.turn = 1;
         if (parsed.logs) appState.logs = parsed.logs;
+        if (parsed.armyConfig) appState.armyConfig = parsed.armyConfig;
       }
     } catch(e) { 
       console.warn('LocalStorage no disponible o bloqueado por el navegador:', e); 
@@ -1190,7 +1622,8 @@
       localStorage.setItem('wh_combat_pro_state', JSON.stringify({
         units: appState.units,
         scores: appState.scores,
-        logs: appState.logs
+        logs: appState.logs,
+        armyConfig: appState.armyConfig
       }));
     } catch(e) {
       console.error('Error al guardar en localStorage:', e);
@@ -1452,7 +1885,7 @@
         <div class="library-item-chip" data-id="${u.id}">
           ${(libraryExportMode || libraryFactionFilter !== 'Todas') ? '' : '<div class="drag-handle" title="Mantén pulsado y arrastra para reordenar">⠿</div>'}
           <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
-            <div style="width:40px; height:40px; border-radius:6px; background:var(--iron-dark); display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; overflow:hidden;">
+            <div style="width:52px; height:52px; border-radius:8px; background:var(--iron-dark); display:flex; align-items:center; justify-content:center; font-size:1.9rem; flex-shrink:0; overflow:hidden;">
               ${imgHtml}
             </div>
             <div style="overflow:hidden;">
@@ -1935,7 +2368,7 @@
                 📖 Mostrar Habilidades
               </button>
               <div id="abilities-${u.id}" class="abilities-drawer">
-                ${u.abilities || 'Sin habilidades configuradas para esta unidad.'}
+                ${buildAbilitiesText(u)}
               </div>
 
               <div class="weapons-preview-list">
