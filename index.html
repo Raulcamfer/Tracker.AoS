@@ -1152,20 +1152,27 @@
   }
 
   function openArmyRulesModal() {
+    rulesExportMode = false;
+    rulesSelectedIds.clear();
     document.getElementById('army-rules-modal').classList.remove('hidden');
     switchRulesTab('configure');
   }
 
   function openQuickRulesConsult() {
+    rulesExportMode = false;
+    rulesSelectedIds.clear();
     document.getElementById('army-rules-modal').classList.remove('hidden');
     switchRulesTab('consult');
   }
 
   function closeArmyRulesModal() {
+    rulesExportMode = false;
+    rulesSelectedIds.clear();
     document.getElementById('army-rules-modal').classList.add('hidden');
   }
 
   function switchRulesTab(tab) {
+    if (tab === 'consult') { rulesExportMode = false; rulesSelectedIds.clear(); }
     document.getElementById('rules-tab-configure').classList.toggle('hidden', tab !== 'configure');
     document.getElementById('rules-tab-consult').classList.toggle('hidden', tab !== 'consult');
     document.getElementById('rules-tab-configure-btn').classList.toggle('active-attack', tab === 'configure');
@@ -1268,8 +1275,21 @@
     const container = document.getElementById('rules-tab-configure');
     const cfg = appState.armyConfig;
 
+    const toolbarHtml = `
+      <div id="rules-toolbar" style="display:flex; gap:6px; margin-bottom:12px;">
+        <button type="button" class="btn btn-secondary btn-sm" style="flex:1;" onclick="toggleRulesExportMode()">☑️ Exportar</button>
+        <button type="button" class="btn btn-secondary btn-sm" style="flex:1;" onclick="triggerRulesImportInput()">📥 Importar</button>
+        <input type="file" id="rules-import-input" accept="application/json,.json" style="display:none" onchange="handleRulesImportFile(event)">
+      </div>
+    `;
+
+    if (rulesExportMode) {
+      container.innerHTML = toolbarHtml + renderRulesExportSelector();
+      return;
+    }
+
     if (!cfg.faction) {
-      container.innerHTML = `
+      container.innerHTML = toolbarHtml + `
         <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">
           Elige la facción de tu ejército para esta partida. Verás y podrás asignar solo las formaciones, rasgos y artefactos de esa facción.
         </p>
@@ -1295,7 +1315,7 @@
     const usedHeroicIds = new Set(appState.units.filter(u => u.heroicTraitId).map(u => u.heroicTraitId));
     const usedArtifactIds = new Set(appState.units.filter(u => u.artifactId).map(u => u.artifactId));
 
-    container.innerHTML = `
+    container.innerHTML = toolbarHtml + `
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:8px 10px; background:rgba(0,0,0,0.06); border-radius:8px;">
         <span style="font-weight:bold; font-size:0.85rem;">${info.icon} Ejército: ${cfg.faction}</span>
         <button type="button" class="btn btn-secondary btn-sm" onclick="promptChangeArmyFaction()">Cambiar</button>
@@ -1308,6 +1328,186 @@
 
       <button type="button" class="btn btn-danger btn-block" style="margin-top:6px;" onclick="promptResetArmyConfig()">🔄 Reiniciar Configuración (nueva partida)</button>
     `;
+  }
+
+  // --- EXPORTAR / IMPORTAR BIBLIOTECA DE REGLAS ---
+  let rulesExportMode = false;
+  let rulesSelectedIds = new Set();
+
+  function toggleRulesExportMode() {
+    rulesExportMode = !rulesExportMode;
+    rulesSelectedIds.clear();
+    renderRulesConfigureTab();
+  }
+
+  function cancelRulesExportMode() {
+    rulesExportMode = false;
+    rulesSelectedIds.clear();
+    renderRulesConfigureTab();
+  }
+
+  function toggleRuleSelect(ruleId) {
+    if (rulesSelectedIds.has(ruleId)) rulesSelectedIds.delete(ruleId);
+    else rulesSelectedIds.add(ruleId);
+    const btn = document.getElementById('rules-export-confirm-btn');
+    if (btn) {
+      btn.innerText = `Exportar Seleccionadas (${rulesSelectedIds.size})`;
+      btn.disabled = rulesSelectedIds.size === 0;
+    }
+  }
+
+  function renderRulesExportSelector() {
+    const library = getRulesLibrary();
+    if (library.length === 0) {
+      return `
+        <p style="font-size:0.82rem; color:var(--text-muted); text-align:center; padding:15px;">Tu biblioteca de reglas está vacía. Añade formaciones, rasgos o artefactos primero.</p>
+        <button type="button" class="btn btn-secondary btn-block" onclick="cancelRulesExportMode()">Cancelar</button>
+      `;
+    }
+
+    // Agrupamos por facción y luego por tipo, para que sea fácil de escanear al seleccionar
+    const byFaction = {};
+    library.forEach(r => {
+      if (!byFaction[r.faction]) byFaction[r.faction] = [];
+      byFaction[r.faction].push(r);
+    });
+
+    const sectionsHtml = Object.keys(byFaction).map(faction => {
+      const info = FACTION_INFO[faction];
+      const entries = byFaction[faction];
+      return `
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:bold; font-size:0.85rem; margin-bottom:6px;">${info ? info.icon : ''} ${faction}</div>
+          ${entries.map(e => `
+            <label style="display:flex; align-items:center; gap:8px; padding:7px 8px; background:rgba(0,0,0,0.04); border-radius:7px; margin-bottom:5px; cursor:pointer;">
+              <input type="checkbox" ${rulesSelectedIds.has(e.id) ? 'checked' : ''} onchange="toggleRuleSelect('${e.id}')" style="width:18px; height:18px; accent-color:var(--gold-primary); flex-shrink:0;">
+              <span style="flex:1; font-size:0.78rem;">
+                <strong>${e.name}</strong>
+                <span style="color:var(--text-muted);"> — ${RULE_TYPE_LABELS[e.type] ? RULE_TYPE_LABELS[e.type].singular : e.type}</span>
+              </span>
+              ${buildPhaseBadge(e.phase)}
+            </label>
+          `).join('')}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">Marca las entradas que quieres exportar a un archivo para compartir.</p>
+      ${sectionsHtml}
+      <div style="display:flex; gap:6px; margin-top:6px;">
+        <button type="button" class="btn btn-secondary btn-block" onclick="cancelRulesExportMode()">Cancelar</button>
+        <button type="button" id="rules-export-confirm-btn" class="btn btn-block" ${rulesSelectedIds.size === 0 ? 'disabled' : ''} onclick="confirmExportSelectedRules()">Exportar Seleccionadas (${rulesSelectedIds.size})</button>
+      </div>
+    `;
+  }
+
+  function confirmExportSelectedRules() {
+    if (rulesSelectedIds.size === 0) return;
+    const library = getRulesLibrary();
+    const selected = library.filter(r => rulesSelectedIds.has(r.id));
+    if (selected.length === 0) return;
+
+    const exportPayload = {
+      app: 'AoS Tracker',
+      type: 'rules-library-export',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      rules: selected
+    };
+
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `aos-tracker-reglas-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    addLog(`📤 Exportadas ${selected.length} regla(s) de ejército a un archivo.`);
+    cancelRulesExportMode();
+  }
+
+  function triggerRulesImportInput() {
+    document.getElementById('rules-import-input').click();
+  }
+
+  function handleRulesImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let parsed;
+      try {
+        parsed = JSON.parse(e.target.result);
+      } catch (err) {
+        showCustomConfirm({
+          title: '⚠️ Archivo no válido',
+          msg: 'El archivo seleccionado no es un JSON válido de reglas de ejército.',
+          requireTextInput: false,
+          confirmBtnClass: 'btn-danger',
+          onConfirm: () => {}
+        });
+        event.target.value = '';
+        return;
+      }
+
+      const incomingRules = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.rules) ? parsed.rules : null);
+      if (!incomingRules || incomingRules.length === 0) {
+        showCustomConfirm({
+          title: '⚠️ Archivo no válido',
+          msg: 'El archivo no contiene reglas reconocibles.',
+          requireTextInput: false,
+          confirmBtnClass: 'btn-danger',
+          onConfirm: () => {}
+        });
+        event.target.value = '';
+        return;
+      }
+
+      const library = getRulesLibrary();
+      const existingKeys = new Set(library.map(r => `${r.faction}|${r.type}|${r.name}`));
+      let addedCount = 0;
+      let renamedCount = 0;
+
+      incomingRules.forEach(r => {
+        if (!r.faction || !r.type || !r.name || !FACTION_INFO[r.faction] || !RULE_TYPE_LABELS[r.type]) return;
+        const cleanRule = JSON.parse(JSON.stringify(r));
+        cleanRule.id = 'rule_' + Date.now() + Math.random().toString(36).substr(2, 4);
+        if (!cleanRule.phase || !PHASE_INFO[cleanRule.phase]) cleanRule.phase = 'pasiva';
+
+        const key = `${cleanRule.faction}|${cleanRule.type}|${cleanRule.name}`;
+        if (existingKeys.has(key)) {
+          cleanRule.name = `${cleanRule.name} (importada)`;
+          renamedCount++;
+        }
+        existingKeys.add(`${cleanRule.faction}|${cleanRule.type}|${cleanRule.name}`);
+        library.push(cleanRule);
+        addedCount++;
+      });
+
+      saveRulesLibrary(library);
+      event.target.value = '';
+      renderRulesConfigureTab();
+
+      let msg = `Se importaron ${addedCount} regla(s) a tu biblioteca.`;
+      if (renamedCount > 0) {
+        msg += ` ${renamedCount} tenían el mismo nombre que reglas existentes (misma facción y tipo) y se renombraron con "(importada)" para no sobrescribir nada.`;
+      }
+      addLog(`📥 Importadas ${addedCount} regla(s) de ejército desde un archivo.`);
+      showCustomConfirm({
+        title: '📥 Importación completada',
+        msg,
+        requireTextInput: false,
+        confirmBtnClass: 'btn',
+        onConfirm: () => {}
+      });
+    };
+    reader.readAsText(file);
   }
 
   function renderRuleAddForm(type) {
